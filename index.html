@@ -1,0 +1,705 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/quiple/galmuri@1.1/dist/galmuri.css">
+<style>
+:root{
+ --bg:#04050c;
+ --winTop:#3a5aa8; --winMid:#1c2c60; --winBot:#0a0f26;
+ --bd1:#e4edff; --bd2:#5c86d6; --bd3:#080b1c;
+ --tx:#f0f3ff; --dm:#8b93c4;
+ --fa:#ff6b7a; --wa:#ffcf5c; --sa:#6be89a; --in:#8fd0ff; --gold:#ffd863;
+ --r:3px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:'IBM Plex Sans KR',system-ui,sans-serif;
+ -webkit-font-smoothing:antialiased}
+.px{font-family:'Galmuri11','IBM Plex Sans KR',monospace;letter-spacing:.02em}
+.mono{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ── 화면 오버레이(스캔라인/비네트) ── */
+.scan{position:fixed;inset:0;pointer-events:none;z-index:45;opacity:.5;mix-blend-mode:overlay;
+ background:repeating-linear-gradient(180deg,rgba(255,255,255,.05) 0,rgba(255,255,255,.05) 1px,transparent 1px,transparent 3px)}
+.vig{position:fixed;inset:0;pointer-events:none;z-index:44;
+ background:radial-gradient(ellipse at 50% 40%,transparent 52%,rgba(0,0,4,.62) 100%)}
+
+.app{max-width:440px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;padding:12px 13px 13px;position:relative;z-index:1}
+.hide{display:none!important}
+
+/* ── RPG 창틀(공용) ── */
+.win{position:relative;background:linear-gradient(165deg,rgba(58,90,168,.93),rgba(10,15,38,.95) 65%);
+ box-shadow:0 0 0 2px var(--bd1),0 0 0 4px var(--bd2),0 0 0 5px var(--bd3),0 6px 14px rgba(0,0,0,.5)}
+
+.hud{flex:0 0 auto;margin-bottom:13px}
+.hr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px}
+.dl{background:linear-gradient(165deg,rgba(58,90,168,.93),rgba(10,15,38,.95) 65%);
+ box-shadow:0 0 0 2px var(--bd1),0 0 0 4px var(--bd2),0 0 0 5px var(--bd3);
+ padding:7px 12px;display:flex;align-items:baseline;gap:7px}
+.dl .lb{font-size:9.5px;letter-spacing:.18em;color:var(--dm)}
+.dl .tm{font-size:24px;font-weight:600;letter-spacing:-.01em;color:var(--tx);text-shadow:0 0 8px rgba(143,208,255,.5)}
+.dl.crit{box-shadow:0 0 0 2px #ffd9d9,0 0 0 4px var(--fa),0 0 0 5px var(--bd3)}
+.dl.crit .tm{color:var(--fa);animation:bl .6s infinite;text-shadow:0 0 10px rgba(255,107,122,.7)}
+@keyframes bl{50%{opacity:.35}}
+.tr{background:linear-gradient(165deg,rgba(58,90,168,.93),rgba(10,15,38,.95) 65%);
+ box-shadow:0 0 0 2px var(--bd1),0 0 0 4px var(--bd2),0 0 0 5px var(--bd3);
+ padding:7px 12px;text-align:right;font-size:11px;letter-spacing:.02em;color:#c7cfef}
+.tr b{color:var(--gold);font-size:14px;display:block;text-shadow:0 0 6px rgba(255,216,99,.4)}
+.ln{height:4px;background:#0a0f26;box-shadow:0 0 0 1px var(--bd3);overflow:hidden;margin-top:2px}
+.ln i{display:block;height:100%;background:linear-gradient(90deg,var(--in),var(--tx));transition:width .12s linear}
+.ln.crit i{background:linear-gradient(90deg,var(--fa),#ffb0b8)}
+
+.tabs{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:11px;flex:0 0 auto;padding:3px 2px 6px}
+.tab{background:linear-gradient(165deg,rgba(40,58,110,.7),rgba(9,13,32,.85));
+ box-shadow:0 0 0 1.5px rgba(220,233,255,.55),0 0 0 3px var(--bd2),0 0 0 3.5px var(--bd3);
+ padding:8px 4px;color:var(--dm);font:inherit;font-size:12px;cursor:pointer;white-space:nowrap;
+ overflow:hidden;text-overflow:ellipsis;text-align:center;position:relative}
+.tab.on{color:var(--tx);background:linear-gradient(165deg,rgba(74,108,190,.95),rgba(14,20,48,.95))}
+.tab .dot{position:absolute;top:4px;right:5px;width:5px;height:5px;border-radius:9px;background:var(--wa);
+ box-shadow:0 0 5px var(--wa)}
+
+.body{flex:1 1 auto;overflow-y:auto;min-height:0;padding:2px 3px 4px}
+
+/* ── 문서 ── */
+.doc{font-size:13.5px;line-height:1.72}
+.dh{font-size:11.5px;letter-spacing:.03em;color:#c7cfef;margin:0 0 10px;font-weight:500}
+.slide,.page{padding:13px 14px;margin-bottom:12px}
+.slide .sn{font-size:9.5px;color:var(--dm);letter-spacing:.1em;margin-bottom:7px}
+.slide h3{font-size:15px;margin:0 0 8px;font-weight:600;letter-spacing:-.01em}
+.page h3{font-size:13.5px;margin:0 0 9px;font-weight:600;color:var(--in)}
+.u{cursor:pointer;border-radius:3px;padding:1px 2px;margin:0 -2px;transition:.12s;display:inline}
+.u:active{background:rgba(143,208,255,.18)}
+.u.pin{background:rgba(255,207,92,.16);box-shadow:inset 0 -2px 0 var(--wa)}
+.u.ev{background:rgba(143,208,255,.16);box-shadow:inset 0 -2px 0 var(--in)}
+.u.fx{background:rgba(107,232,154,.14);box-shadow:inset 0 -2px 0 var(--sa)}
+.u.er{background:rgba(255,107,122,.15);box-shadow:inset 0 -2px 0 var(--fa)}
+p.blk{margin:0 0 11px}
+.cap{font-size:11px;color:var(--dm);margin-top:6px}
+.tbl{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:4px}
+.tbl td,.tbl th{border:1px solid rgba(140,160,220,.3);padding:5px 7px;text-align:left}
+.tbl th{color:var(--dm);font-weight:500;font-size:10.5px}
+.meta{font-size:12px;color:var(--dm);line-height:1.7;margin-bottom:10px}
+.ref{font-size:12.5px;line-height:1.7;margin-bottom:9px}
+.rub{font-size:12.5px;line-height:1.8}
+.rub b{color:var(--wa)}
+.arc h4{font-size:11.5px;color:var(--gold);letter-spacing:.06em;margin:0 0 7px;font-weight:600}
+.arc .blk2{margin-bottom:16px}
+.arc .blk2:last-child{margin-bottom:0}
+.list li{margin-bottom:5px;font-size:12px;color:var(--dm)}
+
+/* ── 채팅 ── */
+.msg{display:flex;gap:8px;margin-bottom:10px}
+.av{flex:0 0 27px;height:27px;background:linear-gradient(165deg,var(--winTop),var(--winBot));
+ box-shadow:0 0 0 1.5px var(--bd1),0 0 0 3px var(--bd2);display:grid;place-items:center;
+ font-size:11px;font-weight:600;color:var(--tx)}
+.bub{background:linear-gradient(165deg,rgba(40,58,110,.85),rgba(9,13,32,.92));
+ box-shadow:0 0 0 1.5px rgba(220,233,255,.5),0 0 0 3px var(--bd2);
+ padding:8px 11px;font-size:12.5px;line-height:1.5}
+.bub .nm{font-size:10px;color:var(--gold);display:block;margin-bottom:3px;letter-spacing:.04em}
+.bub.mine{background:linear-gradient(165deg,rgba(30,40,80,.85),rgba(9,13,32,.92))}
+.askbox{margin-top:14px;padding-top:12px;border-top:1px dashed rgba(140,160,220,.3)}
+.ask{width:100%;text-align:left;background:linear-gradient(165deg,rgba(40,58,110,.75),rgba(9,13,32,.88));
+ box-shadow:0 0 0 1.5px rgba(220,233,255,.4),0 0 0 3px var(--bd2);
+ padding:10px 12px;margin-bottom:8px;color:var(--tx);font:inherit;font-size:12.5px;cursor:pointer;position:relative;padding-left:20px}
+.ask::before{content:"▸";position:absolute;left:8px;color:var(--gold)}
+.ask:disabled{opacity:.35;cursor:not-allowed}
+.ask:disabled::before{color:var(--dm)}
+.ask span{color:var(--wa);font-size:11px;float:right}
+
+/* ── 시트(다이얼로그 창) ── */
+.sheet{position:fixed;inset:0;background:rgba(3,4,10,.78);display:flex;align-items:flex-end;z-index:50}
+.sin{background:linear-gradient(180deg,#141a38,#070a1a 55%);width:100%;max-width:440px;margin:0 auto;
+ box-shadow:0 0 0 2px var(--bd1),0 0 0 4px var(--bd2),0 0 0 5px var(--bd3);
+ padding:17px 16px 20px;max-height:88dvh;overflow-y:auto;animation:up .2s cubic-bezier(.2,.9,.3,1)}
+@keyframes up{from{transform:translateY(26px)}to{transform:none}}
+.sq{font-size:14.5px;line-height:1.65;background:rgba(10,14,34,.6);box-shadow:0 0 0 1.5px rgba(220,233,255,.35),0 0 0 3px var(--bd2);
+ padding:12px 13px;margin-bottom:15px;min-height:1.65em;cursor:pointer}
+.sh{font-size:12px;letter-spacing:.03em;color:var(--gold);margin:15px 0 8px;font-weight:600}
+.opt{width:100%;text-align:left;background:linear-gradient(165deg,rgba(40,58,110,.7),rgba(9,13,32,.85));
+ box-shadow:0 0 0 1.5px rgba(220,233,255,.4),0 0 0 3px var(--bd2);
+ padding:10px 12px 10px 21px;margin-bottom:7px;color:var(--tx);font:inherit;font-size:13px;cursor:pointer;position:relative}
+.opt::before{content:"▸";position:absolute;left:8px;color:var(--gold);opacity:.85}
+.opt:active{background:linear-gradient(165deg,rgba(74,108,190,.9),rgba(14,20,48,.9))}
+.opt .c{float:right;color:var(--wa);font-size:11px}
+.opt .d{display:block;font-size:11.5px;color:var(--dm);margin-top:3px;line-height:1.45}
+.opt:disabled{opacity:.35;cursor:not-allowed}
+.evb{background:rgba(10,14,34,.55);box-shadow:0 0 0 1.5px rgba(143,208,255,.45),0 0 0 3px var(--bd2);
+ padding:12px;margin-bottom:11px;font-size:12.5px;line-height:1.6}
+.evb.no{box-shadow:0 0 0 1.5px rgba(255,107,122,.5),0 0 0 3px var(--bd2)}
+.evb.ok{box-shadow:0 0 0 1.5px rgba(107,232,154,.5),0 0 0 3px var(--bd2)}
+.evb .t{font-size:10px;letter-spacing:.14em;color:var(--in);margin-bottom:8px}
+.warnb{background:rgba(255,107,122,.1);box-shadow:0 0 0 1.5px rgba(255,107,122,.4);
+ padding:10px 12px;font-size:12px;line-height:1.55;color:#ffb3ba;margin-bottom:10px}
+.btn{width:100%;border:0;padding:13px;font:inherit;font-size:14.5px;font-weight:600;cursor:pointer;
+ background:linear-gradient(165deg,#4a6cbe,#141a38);color:var(--tx);
+ box-shadow:0 0 0 2px var(--bd1),0 0 0 4px var(--bd2),0 0 0 5px var(--bd3)}
+.btn:active{transform:translateY(1px)}
+.btn.g{background:transparent;box-shadow:0 0 0 1.5px rgba(140,160,220,.4);color:var(--dm);font-size:12.5px;padding:11px}
+.foot{flex:0 0 auto;padding-top:10px}
+.toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);
+ background:linear-gradient(165deg,rgba(58,90,168,.95),rgba(10,15,38,.97));
+ box-shadow:0 0 0 1.5px var(--bd1),0 0 0 3px var(--bd2);
+ padding:9px 16px;font-size:12.5px;z-index:60;opacity:0;pointer-events:none;white-space:nowrap;
+ max-width:88vw;overflow:hidden;text-overflow:ellipsis}
+.toast.on{animation:ts 2s ease-out}
+@keyframes ts{0%{opacity:0;transform:translateX(-50%) translateY(8px)}12%{opacity:1;transform:translateX(-50%)}
+ 82%{opacity:1}100%{opacity:0}}
+
+/* ── 인트로/결과 ── */
+.intro{display:flex;flex-direction:column;justify-content:center;height:100%;text-align:center}
+.intro .k{font-size:10.5px;letter-spacing:.26em;color:var(--in);margin-bottom:14px}
+.intro h1{font-size:28px;font-weight:700;letter-spacing:.01em;margin:0 0 15px;text-shadow:0 0 14px rgba(143,208,255,.35)}
+.intro p{font-size:13px;color:var(--dm);line-height:1.8;margin:0 0 22px}
+.rules{background:linear-gradient(165deg,rgba(40,58,110,.55),rgba(9,13,32,.75));
+ box-shadow:0 0 0 2px var(--bd1),0 0 0 4px var(--bd2),0 0 0 5px var(--bd3);
+ padding:16px;text-align:left;font-size:12.5px;line-height:1.8;color:var(--dm);margin-bottom:22px}
+.rules b{color:var(--gold)}
+.grade{text-align:center;padding:20px 0 14px}
+.grade .g{font-size:52px;font-weight:700;letter-spacing:.02em;line-height:1;text-shadow:0 0 20px currentColor}
+.grade .s{font-size:12.5px;color:var(--dm);margin-top:8px}
+.qa{background:rgba(10,14,34,.55);box-shadow:0 0 0 1.5px rgba(255,207,92,.45),0 0 0 3px var(--bd2);
+ padding:11px 12px;margin-bottom:9px;font-size:12.5px;line-height:1.55}
+.qa .w{font-size:10px;color:var(--wa);display:block;margin-bottom:4px;letter-spacing:.09em}
+.qa.bad{box-shadow:0 0 0 1.5px rgba(255,107,122,.5),0 0 0 3px var(--bd2)}.qa.bad .w{color:var(--fa)}
+.qa.ok{box-shadow:0 0 0 1.5px rgba(107,232,154,.5),0 0 0 3px var(--bd2)}.qa.ok .w{color:var(--sa)}
+.row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:11.5px}
+.row .l{flex:0 0 100px;color:var(--dm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .b{flex:1;height:6px;background:#0a0f26;box-shadow:0 0 0 1px var(--bd3);overflow:hidden}
+.row .b i{display:block;height:100%}
+.row .v{flex:0 0 34px;text-align:right;color:var(--dm)}
+.note{font-size:11px;color:#5c6698;line-height:1.65;margin-top:14px;padding-top:12px;border-top:1px dashed rgba(140,160,220,.25)}
+</style>
+
+<div class="vig"></div><div class="scan"></div>
+<div class="app">
+<section id="scIntro" class="intro">
+  <div class="k px">VERIFIERS · EP.01</div>
+  <h1 class="px">제출 6분 전</h1>
+  <p>교양 팀플 &lt;대학생의 생성형 AI 활용 실태&gt;<br>마지막 파일이 방금 도착했다.</p>
+  <div class="rules">
+    <b>읽고, 직접 지목한다.</b><br>
+    수상한 문장을 눌러 무엇이 잘못됐는지 스스로 판단한다. 읽고 지목하는 데는 시간이 들지 않는다.<br><br>
+    <b>도구는 증명하는 데 쓴다.</b><br>
+    지목한 곳에만 쓸 수 있고 비싸다. 증거 없이 고치면 효과가 줄고, 교수 질문을 막지 못한다.<br><br>
+    <b>거의 모든 문장을 눌러볼 수 있다.</b><br>
+    그중 실제로 문제인 것은 일부다. 나머지는 그냥 문장이다.
+  </div>
+  <button class="btn px" id="btnToBrief">다음 — 채점 기준 확인</button>
+</section>
+
+<section id="scBrief" class="intro hide">
+  <div class="k px">EP.01 · 시작 전</div>
+  <h1 class="px" style="font-size:24px">채점 기준</h1>
+  <p>제출 전 교수가 미리 공지한 배점이다.<br>게임이 시작되면 다시 확인할 수 없으니 기억해 두자.</p>
+  <div class="rules rub" style="text-align:left">
+   <b>과제 목표</b><br>특정 현상의 <b>실태를 자료에 근거해 분석</b>할 것.<br><br>
+   <b>배점</b><br>
+   · 자료의 신뢰성과 출처 명시 — 30<br>
+   · 실태 분석의 타당성 — 40<br>
+   · 표현·구성 — 20<br>
+   · 연구윤리 준수 — 10<br>
+   · 정책 제언 — <b>0 (평가 대상 아님)</b><br><br>
+   <b>유의</b><br>표본의 범위를 넘어선 일반화는 감점한다. 응답자 식별정보가 포함될 경우 윤리 항목에서 감점한다.
+  </div>
+  <button class="btn px" id="btnStart">파일 열기</button>
+</section>
+
+<section id="scGame" class="hide" style="display:flex;flex-direction:column;height:100%">
+  <div class="hud">
+    <div class="hr">
+      <div class="dl px" id="dl"><span class="lb">DEADLINE</span><span class="tm mono" id="clk">6:00</span></div>
+      <div class="tr">팀 신뢰<b class="mono" id="trN">80</b></div>
+    </div>
+    <div class="ln" id="lnw"><i id="lnf"></i></div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="body" id="body"></div>
+  <div class="foot"><button class="btn px" id="btnSub">지금 제출하기</button></div>
+</section>
+
+<section id="scEnd" class="hide" style="overflow-y:auto">
+  <div class="grade"><div class="g px" id="eG"></div><div class="s" id="eS"></div></div>
+  <div id="eQ"></div>
+  <div class="sh" style="margin-top:17px">내가 시간을 쓴 곳 vs 실제 치명도</div>
+  <div id="eT"></div>
+  <div class="sh">지목 복기</div>
+  <div id="eRev"></div>
+  <div id="eTeam"></div>
+  <button class="btn g px" id="btnAgain" style="margin-top:13px">다시 플레이</button>
+  <div class="note">같은 에피소드도 오류 배치가 다른 버전이 있습니다. 교실에서는 팀마다 다른 버전을 돌립니다.</div>
+</section>
+</div>
+<div class="toast px" id="toast"></div>
+
+<script>
+const $=i=>document.getElementById(i);
+const TOTAL=360;
+
+/* ── 지목 사유 ── */
+const KINDS=[
+ {k:"A",t:"근거가 아예 없다"},
+ {k:"B",t:"근거는 있는데 딴 얘기다"},
+ {k:"C",t:"조건을 넘겨서 말했다"},
+ {k:"D",t:"숫자나 그림이 원자료와 다르다"},
+ {k:"E",t:"과제가 요구한 게 아니다"},
+ {k:"F",t:"남의 개인정보가 그대로 있다"},
+ {k:"G",t:"단순한 실수다"}
+];
+
+/* ── 도구: 지목한 곳에서, 기록보관소의 원자료를 "공식 인용 근거"로 굳힌다 ── */
+const TOOLS={
+ source :{n:"출처 추적",   c:35, d:"인용된 문서가 실재하는지, 정말 그 주장을 하는지 공식 확인"},
+ raw    :{n:"원자료 대조", c:45, d:"기록보관소의 원본 수치를 근거로 정식 인용한다"},
+ version:{n:"버전 기록",   c:25, d:"기록보관소의 편집 로그를 근거로 정식 인용한다"}
+};
+
+/* ── 사건 데이터 ── */
+const N={
+ fake:{sev:"치명",exp:.85,kind:"A",tool:"source",w:16,cand:["A","B","D","C"],
+  ev:{c:"no",t:"검색 결과 (공식 재확인)",rows:[
+      ["교육부 발간자료 검색","결과 없음","z"],
+      ["국가통계포털","해당 명칭의 조사 없음","z"],
+      ["한국교육개발원 (2024)","「대학 교육환경 변화 연구」 · 참고 가능","n"]]},
+  fx:[{n:"문장 삭제",c:5,q:-4,t:0},
+      {n:"실재 조사로 교체",c:22,q:12,t:-1,d:"수치는 낮아진다"},
+      {n:"그대로 둔다",c:0,q:0,t:0,keep:1}]},
+
+ axis:{sev:"중요",exp:.60,kind:"D",tool:"raw",w:5,cand:["C","B","D","G"],
+  ev:{c:"no",t:"원자료 대조 기록",chart:1,tbl:{
+      head:["구분","인원","평균 학점"],
+      rows:[["AI 미사용","5","3.21"],["AI 사용","7","3.43"],["전체","12","3.34"]]}},
+  fx:[{n:"축을 0부터로 수정",c:12,q:8,t:-1},
+      {n:"수치를 함께 표기",c:8,q:5,t:0},
+      {n:"그대로 둔다",c:0,q:0,t:0,keep:1}]},
+
+ gen:{sev:"중요",exp:.55,kind:"C",tool:null,w:5,needRead:"doc3",cand:["A","C","B","E"],
+  ev:{c:"no",t:"설문 원자료",rows:[
+      ["응답 건수","12건","z"],["소속","전원 같은 과 2학년","z"],
+      ["배포 경로","학과 단톡방 링크","n"],["수집 기간","3일","n"]]},
+  fx:[{n:"'본 과 2학년'으로 한정",c:10,q:8,t:0},
+      {n:"표본 한계를 먼저 밝힌다",c:14,q:11,t:1,d:"결론은 덜 화려해지지만 방어력이 크게 오른다"},
+      {n:"그대로 둔다",c:0,q:0,t:0,keep:1}]},
+
+ foot:{sev:"중요",exp:.50,kind:"A",tool:"version",w:5,cand:["G","B","D","A"],
+  ev:{c:"no",t:"버전 기록 (공식 확인)",rows:[
+      ["소영 · 21:30","표 서식 수정","n"],
+      ["서진 · 22:10","3장 문단 추가","n"],
+      ["하린 · 23:41","각주 2개 삭제 (레이아웃 조정)","z"]]},
+  fx:[{n:"각주 복원",c:16,q:9,t:-2,d:"하린의 레이아웃이 틀어진다"},
+      {n:"본문에 출처를 괄호로",c:9,q:6,t:0},
+      {n:"그대로 둔다",c:0,q:0,t:0,keep:1}]},
+
+ rubric:{sev:"중요",exp:.50,kind:"E",tool:null,w:5,cand:["C","E","B","A"],
+  ev:{c:"no",t:"평가기준 발췌",rows:[
+      ["실태 분석의 타당성","배점 40","n"],["정책 제언","배점 0 · 평가 대상 아님","z"]]},
+  fx:[{n:"분석 요약으로 교체",c:16,q:10,t:-1},
+      {n:"제언을 부록으로 이동",c:9,q:6,t:0},
+      {n:"그대로 둔다",c:0,q:0,t:0,keep:1}]},
+
+ priv:{sev:"중요",exp:.45,kind:"F",tool:null,w:5,needRead:"doc3",cand:["G","A","C","F"],
+  ev:{c:"no",t:"부록 첨부본",rows:[
+      ["1열","이름 (김O윤, 박O진 …)","z"],["2열","학번 (2023xxxxx …)","z"],
+      ["동의 문항","설문지에 없음","z"]]},
+  fx:[{n:"익명 처리",c:12,q:9,t:0},
+      {n:"부록 통째로 제거",c:5,q:4,t:0,d:"데이터 투명성이 사라진다"},
+      {n:"그대로 둔다",c:0,q:0,t:0,keep:1}]},
+
+ typo:{sev:"경미",exp:.30,kind:"G",tool:null,w:2,always:1,cand:["E","G","B","A"],
+  ev:{c:"no",t:"확인",rows:[["표지 표기","인공지증과 사회","z"],["수강편람","인공지능과 사회","n"]]},
+  fx:[{n:"오타 수정",c:4,q:3,t:0},{n:"그대로 둔다",c:0,q:0,t:0,keep:1}]},
+
+ style:{sev:"정상",exp:0,kind:null,tool:"source",w:0,cand:["B","A","G","C"],
+  ev:{c:"ok",t:"인용 대조",rows:[
+      ["인용 A","원문 확인 · 문장 일치","h"],["인용 B","원문 확인 · 문장 일치","h"],
+      ["작업 로그","초안은 AI · 이후 출처 보강 및 수정","n"]]},
+  fx:[{n:"의심스러우니 삭제",c:5,q:0,t:-2,wrong:1},{n:"그대로 둔다",c:0,q:0,t:0,keep:1,right:1}]},
+
+ journal:{sev:"정상",exp:0,kind:null,tool:"source",w:0,cand:["A","D","B","G"],
+  ev:{c:"ok",t:"저널 조회",rows:[
+      ["등재","국제 학술지 · 1998년 창간","h"],["DOI","확인됨","h"],
+      ["인용 문장","원문과 일치","h"]]},
+  fx:[{n:"불안하니 뺀다",c:5,q:0,t:-1,wrong:1},{n:"그대로 둔다",c:0,q:0,t:0,keep:1,right:1}]}
+};
+
+/* ── 팀원(비동기) ── */
+const PEOPLE=[
+ {id:"서진",q:"참고문헌 원문 링크 2개만 보내줄 수 있어?",gives:"fake",
+  a:"…아 그거 AI가 넣어준 거라 링크가 없네. 미안, 내가 확인을 못 했어."},
+ {id:"하린",q:"어제 레이아웃 만질 때 지운 거 있어?",gives:"foot",
+  a:"각주 두 개 지웠어. 자리가 안 나와서... 그거 중요한 거였어?"},
+ {id:"소영",q:"부록에 설문 파일 원본 그대로 넣었어?",gives:"priv",
+  a:"응 그대로. 이름 열도 안 지웠는데 괜찮나?"},
+ {id:"도윤",q:"설문 응답자 몇 명이고 어디서 받았어?",gives:"gen",
+  a:"12명. 우리 과 2학년 단톡방에만 돌렸어."}
+];
+
+/* ── 문서 ──
+   doc1/doc2/doc4 = 제출물 (진짜 오류 + 정상 함정 + 막다른 문장 섞음)
+   doc3/archive = 원자료·기록보관소 (읽기용 근거, 자유 열람)
+   평가기준은 게임 시작 전 브리핑에서 이미 공지됐다 (ev.rubric 기본값 1) */
+const DOCS=[
+ {id:"doc1",name:"발표",render:()=>`
+  <div class="dh">발표자료 · 슬라이드 5장</div>
+  <div class="slide win"><div class="sn">SLIDE 1</div>
+    <h3><span class="u" data-n="typo">인공지증과 사회</span></h3>
+    <div class="cap"><span class="u" data-n="blank1">대학생의 생성형 AI 활용 실태 · 3조</span></div></div>
+  <div class="slide win"><div class="sn">SLIDE 2 · 배경</div>
+    <p class="blk"><span class="u" data-n="blank2">생성형 AI는 이미 대학 과제 환경에 깊숙이 들어와 있다.</span>
+      <span class="u" data-n="fake">「2025 교육부 대학생 AI 활용 실태조사」에 따르면 대학생의 78%가 과제 수행에 생성형 AI를 사용한다.</span>
+      <span class="u" data-n="blank3">이는 불과 2년 전과 비교해 세 배 가까이 늘어난 수치다.</span></p></div>
+  <div class="slide win"><div class="sn">SLIDE 3 · 성적 비교</div>
+    <span class="u" data-n="axis">${chart('trunc')}<div class="cap">AI 사용 여부에 따른 평균 학점</div></span>
+    <p class="blk" style="margin-top:9px"><span class="u" data-n="blank4">AI를 활용한 집단의 학점이 뚜렷하게 높게 나타났다.</span></p></div>
+  <div class="slide win"><div class="sn">SLIDE 4 · 인식</div>
+    <p class="blk"><span class="u" data-n="style">응답자들은 생성형 AI를 학습의 대체재가 아니라 보조 도구로 인식하는 경향을 보였으며, 특히 초안 작성 단계에서의 활용도가 두드러졌다. 다만 결과물의 사실성 검증에 대해서는 상당수가 부담을 느끼고 있었다.</span></p></div>
+  <div class="slide win"><div class="sn">SLIDE 5 · 결론</div>
+    <p class="blk"><span class="u" data-n="rubric">따라서 대학은 생성형 AI 사용을 전면 허용하고, 관련 가이드라인을 조속히 마련해야 한다.</span></p></div>`},
+
+ {id:"doc2",name:"보고서",render:()=>`
+  <div class="dh">보고서 본문 · 발췌</div>
+  <div class="page win"><h3>3. 분석</h3>
+   <p class="blk"><span class="u" data-n="blank5">본 조사는 대학 내 생성형 AI 활용의 실태를 파악하기 위해 설문을 실시하였다.</span>
+     <span class="u" data-n="blank6">설문은 온라인으로 배포되었으며 자기기입식으로 응답을 수집하였다.</span></p>
+   <p class="blk"><span class="u" data-n="foot">기존 연구에서도 AI 활용이 학습 효율을 높인다는 결과가 보고된 바 있다.</span> 본 조사 역시 유사한 경향을 확인하였다.</p>
+   <p class="blk"><span class="u" data-n="blank7">응답자들은 대체로 AI 활용에 긍정적이었으나, 사실 검증의 어려움을 함께 지적하였다.</span></p>
+   <h3 style="margin-top:15px">4. 결론</h3>
+   <p class="blk"><span class="u" data-n="gen">본 조사는 전체 대학생의 인식이 이와 같다는 점을 보여 준다.</span>
+     <span class="u" data-n="blank8">향후 제도적 논의가 필요하다.</span></p></div>`},
+
+ {id:"doc3",name:"설문",render:()=>`
+  <div class="dh">설문 원자료 · 부록 첨부본</div>
+  <div class="page win">
+   <div class="meta">수집 기간 3일 · 배포: 학과 단톡방 링크 · 응답 12건</div>
+   <span class="u" data-n="priv"><table class="tbl">
+    <tr><th>이름</th><th>학번</th><th>학년</th><th>사용 빈도</th></tr>
+    <tr><td>김O윤</td><td>2023xxxxx</td><td>2</td><td>주 3회</td></tr>
+    <tr><td>박O진</td><td>2022xxxxx</td><td>2</td><td>매일</td></tr>
+    <tr><td>이O서</td><td>2023xxxxx</td><td>2</td><td>주 1회</td></tr>
+    <tr><td colspan="4" style="color:var(--dm)">… 외 9건</td></tr>
+   </table></span>
+   <div class="cap">파일명: 설문응답_최종_진짜최종.xlsx</div></div>`},
+
+ {id:"doc4",name:"참고",render:()=>`
+  <div class="dh">참고문헌 · 3건</div>
+  <div class="page win">
+   <div class="ref">[1] <span class="u" data-n="fake">교육부 (2025). 「2025 대학생 AI 활용 실태조사」. 교육부.</span></div>
+   <div class="ref">[2] <span class="u" data-n="journal">Kim, S. &amp; Park, J. (2024). Generative AI adoption in higher education. <i>Journal of Educational Technology &amp; Society</i>, 27(2).</span></div>
+   <div class="ref">[3] <span class="u" data-n="blank9">한국교육개발원 (2024). 대학 교육환경 변화 연구. 연구보고 RR2024-08.</span></div></div>`},
+
+ {id:"archive",name:"기록",render:()=>`
+  <div class="dh">기록보관소 · 원본 데이터</div>
+  <div class="page win arc">
+   <div class="blk2"><h4>국가 자료 열람 시스템 — 최근 등록 목록</h4>
+    <ul class="list">
+     <li>2024 대학 교육환경 변화 연구 · 한국교육개발원</li>
+     <li>2023 대학생 진로의식 조사 · 통계청</li>
+     <li>2025 청년 고용동향 발표 · 고용노동부</li>
+     <li>2025 대학생 미디어 이용 실태 · 방송통신위원회</li>
+    </ul>
+    <div class="cap">정기 갱신 · 이번 달 기준.</div></div>
+   <div class="blk2"><h4>발표팀 공유 스프레드시트 — 원본 점수표</h4>
+    <table class="tbl"><tr><th>구분</th><th>인원</th><th>평균 학점</th></tr>
+     <tr><td>AI 미사용</td><td>5</td><td>3.21</td></tr>
+     <tr><td>AI 사용</td><td>7</td><td>3.43</td></tr>
+     <tr><td>전체</td><td>12</td><td>3.34</td></tr></table></div>
+   <div class="blk2"><h4>파일 공유 서비스 — 자동 편집 로그</h4>
+    <table class="tbl"><tr><th>시각</th><th>작성자</th><th>내용</th></tr>
+     <tr><td>21:30</td><td>소영</td><td>표 서식 수정</td></tr>
+     <tr><td>22:10</td><td>서진</td><td>3장 문단 추가</td></tr>
+     <tr><td>23:41</td><td>하린</td><td>각주 2개 삭제</td></tr></table>
+    <div class="cap">사유란: "레이아웃 조정".</div></div></div>`},
+
+ {id:"chat",name:"채팅",chat:1}
+];
+
+function chart(m){
+  const base=m==='trunc'?3.1:0, top=m==='trunc'?3.5:4.5;
+  const h=v=>Math.max(3,(v-base)/(top-base)*66);
+  return `<svg viewBox="0 0 120 84" style="width:100%;max-width:190px;display:block">
+   <rect x="26" y="${74-h(3.2)}" width="26" height="${h(3.2)}" fill="#4a5680"/>
+   <rect x="68" y="${74-h(3.4)}" width="26" height="${h(3.4)}" fill="${m==='trunc'?'#ff6b7a':'#6be89a'}"/>
+   <line x1="14" y1="74" x2="108" y2="74" stroke="#3d4870"/>
+   <text x="39" y="81" fill="#8b93c4" font-size="7" text-anchor="middle">미사용</text>
+   <text x="81" y="81" fill="#8b93c4" font-size="7" text-anchor="middle">사용</text>
+   <text x="4" y="${74-h(3.2)+3}" fill="#8b93c4" font-size="6">${m==='trunc'?'3.2':'4.5'}</text></svg>`;
+}
+
+/* ── 상태 ── */
+let trust=80,tick=null,ended=false,cur=null,tab="doc1";
+let t0=0, elapsedBase=0, left=TOTAL;
+let pin={},ev={rubric:1},fix={},spent={},read={},asked={},pending=[];
+const chatLog=[];
+
+/* ── 시작 ── */
+$('btnToBrief').addEventListener('click',()=>{
+  $('scIntro').classList.add('hide'); $('scBrief').classList.remove('hide');
+});
+$('btnStart').addEventListener('click',()=>{
+  $('scBrief').classList.add('hide'); $('scGame').classList.remove('hide');
+  buildTabs(); paint();
+  t0=Date.now(); elapsedBase=0;
+  tick=setInterval(()=>{
+    computeLeft(); clockPaint();
+    for(let i=pending.length-1;i>=0;i--){
+      if(left<=pending[i].at){
+        const p=pending.splice(i,1)[0];
+        chatLog.push({who:p.who,txt:p.txt});
+        ev[p.gives]=1; toast(`${p.who}이 답장했다`);
+        if(tab==='chat') paint(); markTab();
+      }
+    }
+    if(left<=0){clearInterval(tick);finish(true);}
+  },100);
+});
+function computeLeft(){
+  left=Math.max(0,TOTAL-((Date.now()-t0)/1000+elapsedBase));
+}
+function clockPaint(){
+  const m=Math.floor(left/60),s=Math.floor(left%60);
+  $('clk').textContent=`${m}:${String(s).padStart(2,'0')}`;
+  $('lnf').style.width=(left/TOTAL*100)+'%';
+  const c=left<=60; $('dl').classList.toggle('crit',c); $('lnw').classList.toggle('crit',c);
+}
+/* 도구·정정·질문 모두 이 함수를 거친다 — 남은 시간 계산에 영구 반영됨 */
+function spend(sec,key){
+  elapsedBase+=sec; if(key)spent[key]=(spent[key]||0)+sec;
+  computeLeft(); clockPaint();
+  if(left<=0){clearInterval(tick);closeSheet();finish(true);}
+}
+function setTrust(d){trust=Math.max(0,Math.min(100,trust+d));$('trN').textContent=Math.round(trust);}
+function toast(m){const t=$('toast');t.textContent=m;t.classList.remove('on');void t.offsetWidth;t.classList.add('on');}
+
+/* ── 탭/렌더 ── */
+function buildTabs(){
+  $('tabs').innerHTML=DOCS.map(d=>
+    `<button class="tab ${d.id===tab?'on':''}" data-d="${d.id}">${d.name}${d.chat?'<span class="dot hide"></span>':''}</button>`).join('');
+  $('tabs').querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
+    tab=b.dataset.d; read[tab]=1; buildTabs(); paint();
+  }));
+}
+function markTab(){const d=$('tabs').querySelector('[data-d="chat"] .dot'); if(d&&tab!=='chat') d.classList.remove('hide');}
+function paint(){
+  read[tab]=1;
+  const d=DOCS.find(x=>x.id===tab);
+  if(d.chat){ $('body').innerHTML=chatHTML(); bindChat(); $('tabs').querySelector('[data-d="chat"] .dot')?.classList.add('hide'); return; }
+  $('body').innerHTML=`<div class="doc">${d.render()}</div>`;
+  $('body').querySelectorAll('.u').forEach(el=>{
+    const k=el.dataset.n;
+    if(fix[k]) el.classList.add(fix[k].wrong?'er':'fx');
+    else if(ev[k]) el.classList.add('ev');
+    else if(pin[k]) el.classList.add('pin');
+    el.addEventListener('click',e=>{e.stopPropagation();open(k);});
+  });
+}
+function chatHTML(){
+  return chatLog.map(c=>c.mine
+    ? `<div class="msg" style="flex-direction:row-reverse"><div class="av">나</div><div class="bub mine">${c.txt}</div></div>`
+    : `<div class="msg"><div class="av">${c.who[0]}</div><div class="bub"><span class="nm">${c.who}</span>${c.txt}</div></div>`
+  ).join('')
+  + `<div class="askbox"><div class="sh" style="margin-top:0">물어보기 · 10초, 답은 30초쯤 뒤에 온다</div>`
+  + PEOPLE.map((p,i)=>`<button class="ask" data-p="${i}" ${asked[p.id]?'disabled':''}>
+      ${p.id}에게 — ${p.q}<span>신뢰 -2</span></button>`).join('')
+  + `</div>`;
+}
+function bindChat(){
+  $('body').querySelectorAll('.ask').forEach(b=>b.addEventListener('click',()=>{
+    const p=PEOPLE[+b.dataset.p];
+    asked[p.id]=1; spend(10,'ask'); setTrust(-2);
+    chatLog.push({mine:1,txt:p.q});
+    pending.push({at:Math.max(0,left-30),who:p.id,txt:p.a,gives:p.gives});
+    paint();
+  }));
+}
+
+/* ── 지목 시트 ──
+   N에 없는 키(막다른 문장)는 시트를 열지 않고 즉시 안내만 준다. */
+function open(k){
+  if(ended) return;
+  if(!N[k]){ toast('특별히 의심되는 지점은 아니다.'); return; }
+  cur=k; draw();
+}
+function draw(){
+  const k=cur,n=N[k],el=document.querySelector(`[data-n="${k}"]`);
+  const full=el?el.textContent.trim().slice(0,90):'';
+  const full2=full+(full.length>=90?'…':'');
+
+  let h=`<div class="sq" id="sqBox"></div>`;
+
+  if(fix[k]){
+    h+=`<div class="evb ${fix[k].wrong?'no':'ok'}">처리됨 — ${fix[k].n}
+      ${fix[k].wrong?'<br><b style="color:var(--fa)">정상 항목이었다.</b>':''}</div>`;
+  }
+  else if(!pin[k]){
+    if(ev[k]) h+=evHTML(n);
+    h+=`<div class="sh">무엇이 잘못됐다고 보는가</div>`;
+    const cs=n.cand||KINDS.map(x=>x.k);
+    h+=cs.map(c=>{const x=KINDS.find(y=>y.k===c);
+      return `<button class="opt" data-k="${x.k}">${x.t}</button>`;}).join('');
+    h+=`<button class="opt" data-k="none" style="margin-top:8px;color:var(--dm)">이건 문제없어 보인다 — 넘어간다</button>`;
+  }
+  else {
+    const mine=KINDS.find(x=>x.k===pin[k]);
+    h+=`<div class="evb" style="box-shadow:0 0 0 1.5px rgba(140,160,220,.4)"><div class="t" style="color:var(--dm)">나의 지목</div>${mine.t}</div>`;
+    if(ev[k]){
+      h+=evHTML(n);
+      h+=`<button class="opt" data-re="1" style="color:var(--in)">확인해 보니 다르다 — 사유 다시 고르기</button>`;
+    } else {
+      h+=`<div class="sh">입증할 것인가</div>`;
+      if(n.tool) h+=`<button class="opt" data-t="${n.tool}">${TOOLS[n.tool].n}<span class="c">${TOOLS[n.tool].c}초</span>
+        <span class="d">${TOOLS[n.tool].d}</span></button>`;
+      Object.entries(TOOLS).forEach(([tk,t])=>{ if(tk!==n.tool)
+        h+=`<button class="opt" data-t="${tk}">${t.n}<span class="c">${t.c}초</span>
+          <span class="d">${t.d}</span></button>`;});
+      if(n.needRead) h+=`<div class="note" style="border:0;padding:0;margin-top:6px">도구로는 안 될 것 같다. 기록보관소나 다른 문서에 답이 있을지도 모른다.</div>`;
+      h+=`<div class="warnb">증거 없이 고치면 효과가 줄고, 교수 질문을 막지 못한다.</div>`;
+    }
+    h+=`<div class="sh">어떻게 고칠 것인가</div>`;
+    h+=n.fx.map((f,i)=>`<button class="opt" data-f="${i}">${f.n}<span class="c">${f.c?f.c+'초':'0초'}</span>
+      ${f.d?`<span class="d">${f.d}</span>`:''}</button>`).join('');
+    h+=`<button class="opt" data-cancel="1" style="color:var(--dm)">지목 취소</button>`;
+  }
+  h+=`<button class="btn g px" id="shX" style="margin-top:13px">닫기</button>`;
+
+  const s=document.createElement('div'); s.className='sheet'; s.id='sheet';
+  s.innerHTML=`<div class="sin">${h}</div>`; document.body.appendChild(s);
+  typeIn($('sqBox'), full2, 13);
+  s.addEventListener('click',e=>{if(e.target===s)closeSheet();});
+  $('shX').addEventListener('click',closeSheet);
+  s.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{
+    if(b.dataset.k==='none'){closeSheet();return;}
+    pin[k]=b.dataset.k;
+    if(N[k].always) ev[k]=1;
+    if(N[k].needRead&&read[N[k].needRead]) ev[k]=1;
+    closeSheet();draw();paint();
+  }));
+  s.querySelectorAll('[data-t]').forEach(b=>b.addEventListener('click',()=>useTool(b.dataset.t)));
+  s.querySelectorAll('[data-f]').forEach(b=>b.addEventListener('click',()=>doFix(+b.dataset.f)));
+  s.querySelectorAll('[data-cancel]').forEach(b=>b.addEventListener('click',()=>{
+    delete pin[k];closeSheet();paint();}));
+  s.querySelectorAll('[data-re]').forEach(b=>b.addEventListener('click',()=>{
+    delete pin[k];closeSheet();draw();}));
+}
+function closeSheet(){const s=$('sheet');if(s)s.remove();}
+
+/* 다이얼로그 타이핑 연출. 탭하면 즉시 완성. */
+function typeIn(el,text,speed){
+  if(!el) return;
+  let i=0; el.textContent='';
+  clearInterval(el._tid);
+  el._tid=setInterval(()=>{
+    i++; el.textContent=text.slice(0,i);
+    if(i>=text.length) clearInterval(el._tid);
+  },speed);
+  el.onclick=()=>{clearInterval(el._tid); el.textContent=text;};
+}
+
+function evHTML(n){
+  const e=n.ev;
+  let m='';
+  if(e.chart) m+=`<div style="display:flex;gap:12px;margin-bottom:10px">
+     <div>${chart('trunc')}<div class="cap">발표 자료</div></div>
+     <div>${chart('full')}<div class="cap">같은 값, 축을 0부터</div></div></div>`;
+  if(e.tbl) m+=`<table class="tbl" style="margin-bottom:8px">
+     <tr>${e.tbl.head.map(x=>`<th>${x}</th>`).join('')}</tr>
+     ${e.tbl.rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</table>`;
+  if(e.rows) m+=e.rows.map(r=>`<div style="display:flex;gap:8px;margin-bottom:5px;line-height:1.5">
+     <span style="flex:0 0 118px;color:var(--dm);font-size:11.5px">${r[0]}</span>
+     <span style="flex:1;color:${r[2]==='z'?'var(--fa)':r[2]==='h'?'var(--sa)':'var(--tx)'}">${r[1]}</span></div>`).join('');
+  return `<div class="evb ${e.c}"><div class="t">${e.t}</div>${m}
+   <div class="cap" style="margin-top:9px">기록보관소에서 이미 봤다면, 지금은 그것을 공식 인용 근거로 굳히는 절차다.</div></div>`;
+}
+function useTool(tk){
+  const k=cur,n=N[k];
+  spend(TOOLS[tk].c,k); if(ended)return;
+  if(n.tool===tk){
+    ev[k]=1; toast('공식 근거로 기록했다');
+    if(k==='axis'){ ev.gen=1; toast('점수표에서 표본 정보도 함께 확인됐다'); }
+  }
+  else toast('이 도구로는 나오는 게 없다');
+  closeSheet(); if(!ended){draw();paint();}
+}
+function doFix(i){
+  const k=cur,n=N[k],f=n.fx[i];
+  spend(f.c,k); if(f.t)setTrust(f.t); if(ended)return;
+  if(f.keep){ delete pin[k]; closeSheet(); paint(); return; }
+  fix[k]={n:f.n,q:f.q,wrong:!!f.wrong,ev:!!ev[k],kind:pin[k]};
+  if(f.wrong) toast('멀쩡한 걸 건드렸다');
+  closeSheet(); paint();
+}
+
+/* ── 제출 ── */
+$('btnSub').addEventListener('click',()=>finish(false));
+function finish(auto){
+  if(ended)return; ended=true; clearInterval(tick); closeSheet();
+  $('scGame').classList.add('hide'); $('scEnd').classList.remove('hide');
+  let sc=76, qa=[];
+  if(auto){sc-=4;qa.push({c:'bad',w:'제출',t:'마감을 넘겨 지각 제출로 처리됐다.'});}
+
+  Object.entries(N).forEach(([k,n])=>{
+    const f=fix[k];
+    if(n.sev==='정상'){
+      if(f){sc-=6;qa.push({c:'bad',w:'교수',t:'"멀쩡한 부분을 왜 뺐죠? 그건 문제가 없었는데요."'});}
+      else sc+=2;
+      return;
+    }
+    if(f){
+      const kindOK = f.kind===n.kind;
+      let gain = f.q;
+      if(!kindOK) gain*=0.6;
+      if(!f.ev) gain*=0.6;
+      sc+=gain;
+      if(!f.ev && Math.random()<0.45)
+        qa.push({c:'',w:'교수',t:qLine(k)+' <span style="color:var(--dm)">— 근거를 대지 못했다.</span>'});
+      else if(!kindOK)
+        qa.push({c:'',w:'교수',t:'"고치긴 했는데, 왜 그게 문제였는지는 설명이 안 되네요."'});
+      return;
+    }
+    if(Math.random()<n.exp){ sc-=n.w; qa.push({c:n.sev==='치명'?'bad':'',w:'교수',t:qLine(k)}); }
+    else sc-=n.w*0.3;
+  });
+
+  sc=Math.max(0,Math.min(100,Math.round(sc)));
+  const g=sc>=93?'A+':sc>=88?'A':sc>=83?'B+':sc>=76?'B':sc>=68?'C+':sc>=60?'C':'D';
+  $('eG').textContent=g;
+  $('eG').style.color=sc>=83?'var(--sa)':sc>=68?'var(--wa)':'var(--fa)';
+  $('eS').textContent=`교수 질문 ${qa.filter(x=>x.w==='교수').length}건 · 팀 신뢰 ${Math.round(trust)}`;
+  if(!qa.length)qa.push({c:'ok',w:'교수',t:'"근거 범위를 스스로 밝힌 점이 좋았습니다."'});
+  $('eQ').innerHTML=qa.map(q=>`<div class="qa ${q.c}"><span class="w">${q.w}</span>${q.t}</div>`).join('');
+
+  const rows=Object.entries(N).map(([k,n])=>({k,n,t:spent[k]||0}));
+  const mx=Math.max(35,...rows.map(r=>r.t));
+  $('eT').innerHTML=rows.map(r=>{
+    const c=r.n.sev==='치명'?'var(--fa)':r.n.sev==='중요'?'var(--wa)':r.n.sev==='정상'?'var(--in)':'#4a5680';
+    return `<div class="row"><span class="l">${LABEL[r.k]}</span>
+     <span class="b"><i style="width:${r.t/mx*100}%;background:${c}"></i></span>
+     <span class="v">${r.t?Math.round(r.t)+'s':'—'}</span></div>`;}).join('')
+   +`<div class="note" style="border:0;padding:0;margin-top:8px">
+     빨강 치명 · 노랑 중요 · 파랑은 사실 정상이던 항목. 파란 막대가 길면 시간을 잘못 썼다.</div>`;
+
+  $('eRev').innerHTML=Object.entries(N).map(([k,n])=>{
+    const f=fix[k]; let st,col;
+    if(n.sev==='정상'){ st=f?'오진 — 멀쩡한 걸 고쳤다':'넘어감 — 정상이었다'; col=f?'var(--fa)':'var(--sa)'; }
+    else if(!f){ st='놓침'; col='var(--fa)'; }
+    else if(f.kind!==n.kind){ st=`사유 오답 — 실제로는 "${KINDS.find(x=>x.k===n.kind).t}"`; col='var(--wa)'; }
+    else if(!f.ev){ st='맞게 봤지만 증거가 없었다'; col='var(--wa)'; }
+    else { st='정확 + 입증'; col='var(--sa)'; }
+    return `<div class="row"><span class="l">${LABEL[k]}</span>
+      <span style="flex:1;font-size:11.5px;color:${col};line-height:1.4">${st}</span></div>`;
+  }).join('');
+
+  const tm=trust>=70?'팀은 다음에도 같이 하기로 했다.':trust>=45?'뒤끝은 없지만 다들 지쳤다.':'발표는 끝났고 단톡방은 조용해졌다.';
+  $('eTeam').innerHTML=`<div class="sh" style="margin-top:16px">팀</div><div class="qa ok"><span class="w">이후</span>${tm}</div>`;
+}
+const LABEL={fake:"가짜 보고서",axis:"잘린 그래프",gen:"전체 일반화",foot:"사라진 각주",
+ rubric:"과제 불일치",priv:"실명 노출",typo:"표지 오타",style:"AI 문체 의심",journal:"낯선 저널"};
+function qLine(k){return {
+ fake:'"이 78%라는 수치, 출처를 확인하셨습니까? 저는 그 보고서를 못 찾겠는데요."',
+ axis:'"이 그래프 세로축이 3.2부터 시작하네요. 실제 차이가 얼마죠?"',
+ gen:'"응답자가 몇 명이었죠? 전체 대학생이라고 하기엔..."',
+ foot:'"이 문장의 근거는 어디에 있습니까?"',
+ rubric:'"제언은 평가 대상이 아니라고 공지했는데요. 분석은요?"',
+ priv:'"부록에 응답자 실명이 그대로 있습니다. 동의는 받았습니까?"',
+ typo:'"표지 과목명부터 틀렸네요."'}[k]||'"이 부분 설명해 보시죠."';}
+$('btnAgain').addEventListener('click',()=>location.reload());
+</script>
